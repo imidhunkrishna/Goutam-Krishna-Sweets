@@ -1140,7 +1140,7 @@ async function loadProductsFromSheet(){
   showLoadingSkeleton('sweetsGrid');
 
   try {
-    const resp = await fetch(SHEET_URL, {cache:'no-cache'});
+    const resp = await fetch(SHEET_URL + '&t=' + Date.now(), {cache:'no-cache'});
     if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const csv  = await resp.text();
     const rows = csvToObjects(csv);
