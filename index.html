@@ -297,6 +297,26 @@ footer strong{color:#fff;}
 /* ── IMAGE DISCLAIMER ── */
 .img-note{font-size:0.68rem;color:var(--gray);text-align:right;margin-bottom:0.8rem;opacity:0.7;}
 
+/* ── FEATURED STRIPS (Hot in Store / Bestseller) ── */
+.featured-strip-section{padding:2.5rem 8vw 0;}
+.featured-strip-section .strip-head{display:flex;align-items:center;gap:0.75rem;margin-bottom:1.2rem;}
+.strip-fire{font-size:1.4rem;line-height:1;}
+.strip-label{font-size:0.72rem;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:0.12em;}
+.strip-title{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:500;color:var(--brown);}
+.featured-scroll{display:flex;gap:1rem;overflow-x:auto;padding-bottom:0.6rem;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.featured-scroll::-webkit-scrollbar{display:none;}
+.feat-card{flex:0 0 150px;scroll-snap-align:start;background:var(--warm);border:1px solid #EDD8C8;border-radius:16px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;}
+.feat-card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(200,86,107,0.15);}
+.feat-img{height:120px;overflow:hidden;position:relative;background:#F0E8E0;}
+.feat-img img{width:100%;height:100%;object-fit:cover;transition:transform 0.4s;}
+.feat-card:hover .feat-img img{transform:scale(1.07);}
+.feat-badge{position:absolute;top:6px;left:6px;font-size:0.6rem;font-weight:700;padding:0.18rem 0.5rem;border-radius:100px;color:#fff;text-transform:uppercase;letter-spacing:0.06em;}
+.feat-badge.hot{background:linear-gradient(135deg,#ff6b35,#f7931e);}
+.feat-badge.best{background:linear-gradient(135deg,#C9922B,#e8b84b);}
+.feat-info{padding:0.6rem 0.75rem 0.75rem;}
+.feat-name{font-size:0.8rem;font-weight:600;color:var(--brown);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.feat-price{font-size:0.75rem;font-weight:700;color:var(--rose);margin-top:0.25rem;}
+
 /* ── FIX #4: MOBILE RESPONSIVE WITH HAMBURGER ── */
 @media(max-width:768px){
   .hero{grid-template-columns:1fr;padding:3rem 5vw;min-height:auto;gap:2rem;}
@@ -309,6 +329,17 @@ footer strong{color:#fff;}
   .cart-drawer{width:100vw;}
   .map-info{flex-direction:column;align-items:flex-start;gap:0.6rem;}
   .toast{bottom:7.5rem;font-size:0.8rem;padding:0.65rem 1.2rem;}
+  /* 2-column grid on phones */
+  .items-grid{grid-template-columns:repeat(2,1fr);gap:0.75rem;}
+  .item-img{height:130px;}
+  .item-info{padding:0.7rem 0.75rem;}
+  .item-name{font-size:0.82rem;}
+  .item-alt{display:none;}
+  .item-price{font-size:0.68rem;padding:0.2rem 0.5rem;}
+  .add-btn{width:28px;height:28px;font-size:1rem;}
+  .featured-strip-section{padding:2rem 5vw 0;}
+  .feat-card{flex:0 0 130px;}
+  .feat-img{height:100px;}
 }
 </style>
 </head>
@@ -363,6 +394,30 @@ footer strong{color:#fff;}
       <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&q=80&auto=format&fit=crop" alt="Beautiful Custom Cake – Goutam Krishna Sweets">
     </div>
   </div>
+</section>
+
+<!-- HOT IN STORE strip -->
+<section class="featured-strip-section" id="hotStrip" style="display:none">
+  <div class="strip-head">
+    <span class="strip-fire">🔥</span>
+    <div>
+      <div class="strip-label">Trending Now</div>
+      <div class="strip-title">Hot in Store</div>
+    </div>
+  </div>
+  <div class="featured-scroll" id="hotGrid"></div>
+</section>
+
+<!-- BESTSELLER strip -->
+<section class="featured-strip-section" id="bestStrip" style="display:none">
+  <div class="strip-head">
+    <span class="strip-fire">⭐</span>
+    <div>
+      <div class="strip-label">Customer Favourite</div>
+      <div class="strip-title">Bestsellers</div>
+    </div>
+  </div>
+  <div class="featured-scroll" id="bestGrid"></div>
 </section>
 
 <!-- CAKES -->
@@ -1165,12 +1220,61 @@ async function loadProductsFromSheet(){
     render(liveCakes,  'cakesGrid');
     render(liveSweets, 'sweetsGrid');
 
+    // Build featured strips after live data is ready
+    renderFeaturedStrips(liveCakes, liveSweets);
+
     console.info(`✅ Loaded ${sheetCakes.length} cakes + ${sheetSweets.length} sweets from Google Sheet.`);
   } catch(err){
     console.warn('⚠️  Could not load Google Sheet — using built-in product list.', err);
     // liveCakes/liveSweets already default to the hardcoded arrays
     render(liveCakes,  'cakesGrid');
     render(liveSweets, 'sweetsGrid');
+    renderFeaturedStrips(liveCakes, liveSweets);
+  }
+}
+
+// Build a small featured card HTML
+function featCard(item){
+  const key   = item.name.replace(/[^a-zA-Z0-9]/g,'_');
+  itemRegistry[key] = item; // ensure registry has it
+  const tagLow = (item.tag||'').toLowerCase();
+  const badgeClass = tagLow.includes('hot') ? 'hot' : 'best';
+  const badgeText  = tagLow.includes('hot') ? '🔥 Hot' : '⭐ Best';
+  return `<div class="feat-card" onclick="selectItem('${key}')" title="${item.name}">
+    <div class="feat-img">
+      <img src="${item.img}" alt="${item.name}" loading="lazy"
+           onload="this.classList.add('loaded')"
+           onerror="this.classList.add('loaded');this.onerror=null;this.src='${FALLBACK}'">
+      <span class="feat-badge ${badgeClass}">${badgeText}</span>
+    </div>
+    <div class="feat-info">
+      <div class="feat-name">${item.name}</div>
+      <div class="feat-price">${formatDisplayPrice(item.price)}</div>
+    </div>
+  </div>`;
+}
+
+function renderFeaturedStrips(allCakes, allSweets){
+  const all = [...allCakes, ...allSweets];
+  const tagLow = item => (item.tag||'').toLowerCase();
+
+  // Items tagged 'Hot in Store' or 'Hot'
+  const hotItems  = all.filter(i => tagLow(i).includes('hot'));
+  // Items tagged 'Bestseller' or 'Best'
+  const bestItems = all.filter(i => tagLow(i).includes('best'));
+
+  const hotStrip  = document.getElementById('hotStrip');
+  const bestStrip = document.getElementById('bestStrip');
+  const hotGrid   = document.getElementById('hotGrid');
+  const bestGrid  = document.getElementById('bestGrid');
+
+  if(hotItems.length){
+    hotGrid.innerHTML = hotItems.map(featCard).join('');
+    hotStrip.style.display = '';
+  }
+  if(bestItems.length){
+    bestGrid.innerHTML = bestItems.map(featCard).join('');
+    bestStrip.style.display = '';
   }
 }
 
