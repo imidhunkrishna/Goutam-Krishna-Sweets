@@ -1062,10 +1062,9 @@ document.getElementById('oDate').min = new Date().toISOString().split('T')[0];
 // site auto-updates. Falls back to hardcoded data.
 // ════════════════════════════════════════════════
 
-// 🔗 SHEET ID — replace this with the real Sheet ID after owner shares it
-const SHEET_ID   = 'YOUR_GOOGLE_SHEET_ID_HERE';
-const SHEET_GID  = '0';  // 0 = first tab (Sheet1)
-const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+// 🔗 GOOGLE SHEETS CMS — Owner edits this sheet; site auto-updates.
+// Published CSV endpoint (no auth required — sheet is public)
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ78a8DsaRDqw9ZSNixF1J_aE31tBm0aq8-QvoQgtIgpXbe6KjJi9V14pFH9pL0pGHK2JnzXgMnqjGc/pub?output=csv';
 
 // Show skeleton loading state while fetching
 function showLoadingSkeleton(gridId){
@@ -1123,14 +1122,6 @@ function sheetRowToItem(row){
 }
 
 async function loadProductsFromSheet(){
-  // Only attempt if the Sheet ID has been configured
-  if(SHEET_ID === 'YOUR_GOOGLE_SHEET_ID_HERE'){
-    console.info('ℹ️  Google Sheet not configured — using built-in product list.');
-    render(cakes,  'cakesGrid');
-    render(sweets, 'sweetsGrid');
-    return;
-  }
-
   showLoadingSkeleton('cakesGrid');
   showLoadingSkeleton('sweetsGrid');
 
