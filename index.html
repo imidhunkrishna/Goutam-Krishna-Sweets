@@ -723,7 +723,7 @@ function renderCart(){
            onerror="this.src='https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=60&q=60'">
       <div class="ci-info">
         <div class="ci-name">${item.name}</div>
-        <div class="ci-price">Price on enquiry</div>
+        <div class="ci-price">${formatDisplayPrice(item.price)}</div>
         <div class="ci-qty">
           <button class="qty-btn" onclick="changeQty('${item.name}',-1)">−</button>
           <span class="qty-val">${item.qty}</span>
@@ -738,13 +738,15 @@ function renderCart(){
 function sendCartToWhatsApp(){
   if(cart.length === 0){ alert('Your cart is empty!'); return; }
   const note = document.getElementById('cartNote').value.trim();
+  let hasPrices = false;
   const lines = cart.map(item => {
     const up = parsePrice(item.price);
-    const lt = up > 0 ? ` (₹${(up * item.qty).toLocaleString('en-IN')})` : '';
+    if (up > 0) hasPrices = true;
+    const lt = up > 0 ? ` (₹${(up * item.qty).toLocaleString('en-IN')})` : ' (Price on enquiry)';
     return `  • ${item.name} × ${item.qty}${lt}`;
   }).join('\n');
   const sub = cart.reduce((s,i) => s + parsePrice(i.price)*i.qty, 0);
-  const subStr = sub > 0 ? `\n\n💰 *Subtotal: ₹${sub.toLocaleString('en-IN')}*` : '';
+  const subStr = sub > 0 ? `\n\n💰 *Subtotal: ₹${sub.toLocaleString('en-IN')}*` : (hasPrices ? '' : '\n\n💰 *Subtotal: Price on enquiry*');
   const msg =
     `🎂 *New Order – Goutam Krishna Sweets*\n\n` +
     `📋 *Order Items:*\n${lines}${subStr}\n\n` +
@@ -901,6 +903,18 @@ const sweets = [
 // Item registry for safe data access without inline JS injection
 const itemRegistry = {};
 
+// Helper to display clean prices or "Enquire" button/text
+function formatDisplayPrice(priceStr) {
+  if (!priceStr || priceStr === 'Enquire' || priceStr === '0' || priceStr === '') {
+    return '📞 Enquire';
+  }
+  // If it's a raw number, prepend ₹
+  if (/^\d+$/.test(priceStr)) {
+    return `₹${priceStr}`;
+  }
+  return priceStr;
+}
+
 function card(item, index){
   const key = item.name.replace(/[^a-zA-Z0-9]/g,'_');
   itemRegistry[key] = item;
@@ -919,7 +933,7 @@ function card(item, index){
       <div class="item-name">${item.name}</div>
       ${item.alt ? `<div class="item-alt">${item.alt}</div>` : ''}
       <div class="item-foot">
-        <span class="item-price">📞 Enquire</span>
+        <span class="item-price">${formatDisplayPrice(item.price)}</span>
         <button class="add-btn" data-key="${key}"
           onclick="event.stopPropagation();addToCartByKey(this.dataset.key)"
           title="Add to cart" aria-label="Add ${item.name} to cart">+</button>
@@ -1116,7 +1130,7 @@ function sheetRowToItem(row){
     alt   : row.alt   || '',
     cat   : row.category || 'special',
     tag   : row.tag   || '',
-    price : 'Enquire',
+    price : row.price || 'Enquire',
     img   : I[imgKey] || FALLBACK
   };
 }

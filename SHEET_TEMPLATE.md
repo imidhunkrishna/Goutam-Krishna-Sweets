@@ -10,6 +10,7 @@
 | category     | See categories below                                | chocolate          |
 | tag          | Small badge label (optional, leave blank = no badge)| Bestseller         |
 | image_key    | Key from the image map (see below)                  | blackforest        |
+| price        | Numerical price, custom string, or 'Enquire'         | ₹140/kg            |
 | available    | YES to show on site, NO to hide                     | YES                |
 
 ## Valid categories
