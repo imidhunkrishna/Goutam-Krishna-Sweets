@@ -625,7 +625,8 @@ footer strong{color:#fff;}
   </div>
   <div class="cart-foot" id="cartFoot" style="display:none">
     <div class="cart-subtotal">
-      <span style="font-size:0.8rem;color:var(--gray);">💬 Prices confirmed on WhatsApp by the owner</span>
+      <span style="font-size:0.85rem;color:var(--gray);">Subtotal</span>
+      <span id="cartTotal">₹0</span>
     </div>
     <textarea class="cart-note" id="cartNote" placeholder="Special instructions (design, allergies, delivery address…)"></textarea>
     <button class="wa-order-btn" onclick="sendCartToWhatsApp()">
@@ -770,15 +771,19 @@ function renderCart(){
   empty.style.display = 'none';
   foot.style.display  = 'block';
 
+  let subtotal = 0;
   cart.forEach(item => {
+    const up = parsePrice(item.price);
+    subtotal += up * item.qty;
     const div = document.createElement('div');
     div.className = 'cart-item';
+    const linePrice = up > 0 ? `₹${(up * item.qty).toLocaleString('en-IN')}` : 'Price on enquiry';
     div.innerHTML = `
       <img class="ci-img" src="${item.img}" alt="${item.name}"
            onerror="this.src='https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=60&q=60'">
       <div class="ci-info">
         <div class="ci-name">${item.name}</div>
-        <div class="ci-price">${formatDisplayPrice(item.price)}</div>
+        <div class="ci-price">${linePrice}</div>
         <div class="ci-qty">
           <button class="qty-btn" onclick="changeQty('${item.name}',-1)">−</button>
           <span class="qty-val">${item.qty}</span>
@@ -788,6 +793,10 @@ function renderCart(){
       <button class="ci-remove" onclick="removeItem('${item.name}')" title="Remove">🗑</button>`;
     body.appendChild(div);
   });
+
+  if(totalEl){
+    totalEl.textContent = subtotal > 0 ? `₹${subtotal.toLocaleString('en-IN')}` : '₹0';
+  }
 }
 
 function sendCartToWhatsApp(){
@@ -811,11 +820,9 @@ function sendCartToWhatsApp(){
 }
 
 // ════════════════════════════════════════════════
-// FIX #1: PRODUCT DATA WITH REAL ONLINE IMAGES
-// All images are real Unsplash URLs — no broken local paths
-// onerror fallback on every <img> for extra safety
+// IMAGE KEY MAP — local images from the images/ folder
+// image_key column in Google Sheet maps to these keys
 // ════════════════════════════════════════════════
-// Image map — all local images from the images/ folder
 const I = {
   /* ── CAKES ── */
   customized:  'images/customized_cake.jpg',
@@ -880,92 +887,28 @@ const I = {
 };
 const FALLBACK = 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&q=60';
 
-// Prices reflect 2025-26 Kerala / Palakkad local bakery market rates (per 1 kg unless stated)
-const cakes = [
-  // ── CUSTOM ──────────────────────────────────────────────────────────────
-  {name:"Customized Cake",  cat:"custom",    price:"Enquire",  tag:"Bestseller", img:I.customized},
-  {name:"Barbie Cake",      cat:"custom",    price:"Enquire",  tag:"Kids Fav",   img:I.barbie},
-  {name:"Rainbow Cake",     cat:"custom",    price:"Enquire",  tag:"Colorful",   img:I.rainbow},
-  {name:"Dream Cake",       cat:"custom",    price:"Enquire",  tag:"Custom",     img:I.dream},
-  {name:"Box Cake",         cat:"custom",    price:"Enquire",  tag:"Trending",   img:I.box},
-  // ── CHOCOLATE ───────────────────────────────────────────────────────────
-  {name:"Black Forest",     cat:"chocolate", price:"Enquire",  tag:"Classic",    img:I.blackforest},
-  {name:"Chocolate Cake",   cat:"chocolate", price:"Enquire",  tag:"",           img:I.chocolate},
-  {name:"Choco Truffle",    cat:"chocolate", price:"Enquire",  tag:"Rich",       img:I.truffle},
-  {name:"Choconut Cake",    cat:"chocolate", price:"Enquire",  tag:"",           img:I.choconut},
-  {name:"KitKat Cake",      cat:"chocolate", price:"Enquire",  tag:"Kids Fav",   img:I.kitkat},
-  {name:"Ferrero Rocher",   cat:"chocolate", price:"Enquire",  tag:"Premium",    img:I.ferrero},
-  {name:"Black Magic Cake", cat:"chocolate", price:"Enquire",  tag:"Dark",       img:I.blackmagic},
-  {name:"Vancho Cake",      cat:"chocolate", price:"Enquire",  tag:"",           img:I.vancho},
-  // ── FRUIT ───────────────────────────────────────────────────────────────
-  {name:"White Forest",     cat:"fruit",     price:"Enquire",  tag:"Light",      img:I.whiteforest},
-  {name:"Red Velvet",       cat:"fruit",     price:"Enquire",  tag:"Popular",    img:I.redvelvet},
-  {name:"Strawberry Cake",  cat:"fruit",     price:"Enquire",  tag:"Fresh",      img:I.strawberry},
-  {name:"Blueberry Cake",   cat:"fruit",     price:"Enquire",  tag:"",           img:I.blueberry},
-  {name:"Mango Cake",       cat:"fruit",     price:"Enquire",  tag:"Seasonal",   img:I.mango},
-  {name:"Orange Cake",      cat:"fruit",     price:"Enquire",  tag:"",           img:I.orange},
-  {name:"Tender Coconut Cake",cat:"fruit",   price:"Enquire",  tag:"",           img:I.coconut},
-  // ── SPECIAL ─────────────────────────────────────────────────────────────
-  {name:"Biscoff Cake",     cat:"special",   price:"Enquire",  tag:"Trending",   img:I.biscoff},
-  {name:"Cheese Cake",      cat:"special",   price:"Enquire",  tag:"",           img:I.cheese},
-  {name:"Nutty Bubble",     cat:"special",   price:"Enquire",  tag:"Crunchy",    img:I.nutty},
-  {name:"Almond Fudge",     cat:"special",   price:"Enquire",  tag:"",           img:I.almond},
-  {name:"Pista Fudge",      cat:"special",   price:"Enquire",  tag:"",           img:I.pista},
-  {name:"Pistachio Cake",   cat:"special",   price:"Enquire",  tag:"",           img:I.pistachio},
-  {name:"Red Bee Cake",     cat:"special",   price:"Enquire",  tag:"Unique",     img:I.redbee},
-  {name:"Honey Almond",     cat:"special",   price:"Enquire",  tag:"",           img:I.honeyalmond},
-  {name:"Marble Cake",      cat:"special",   price:"Enquire",  tag:"",           img:I.marble},
-  {name:"Ghee Cake",        cat:"special",   price:"Enquire",  tag:"Traditional",img:I.ghee},
-  {name:"Honey Cake",       cat:"special",   price:"Enquire",  tag:"",           img:I.honey},
-  {name:"Plum Cake",        cat:"special",   price:"Enquire",  tag:"",           img:I.plum},
-  {name:"Tea Cake",         cat:"special",   price:"Enquire",  tag:"",           img:I.tea},
-  {name:"Carrot Cake",      cat:"special",   price:"Enquire",  tag:"Healthy",    img:I.carrot},
-  {name:"Butterscotch",     cat:"special",   price:"Enquire",  tag:"",           img:I.butterscotch},
-  // ── OCCASION ────────────────────────────────────────────────────────────
-  {name:"Wedding Cake",     cat:"occasion",  price:"Enquire",  tag:"Grand",      img:I.wedding},
-  {name:"Birthday Cake",    cat:"occasion",  price:"Enquire",  tag:"",           img:I.birthday},
-  {name:"Baby Shower",      cat:"occasion",  price:"Enquire",  tag:"Cute",       img:I.babyshower},
-  {name:"Anniversary Cake", cat:"occasion",  price:"Enquire",  tag:"Romantic",   img:I.anniversary},
-  {name:"Mini Cakes",       cat:"occasion",  price:"Enquire",  tag:"",           img:I.mini},
-  {name:"Cupcakes",         cat:"occasion",  price:"Enquire",  tag:"Party",      img:I.cupcakes}
-];
+// ════════════════════════════════════════════════
+// NO HARDCODED PRODUCT DATA.
+// All products, prices, tags, and availability
+// are loaded exclusively from Google Sheets.
+// Edit the Sheet → site updates automatically.
+// ════════════════════════════════════════════════
 
-// Prices reflect 2025-26 Kerala / Palakkad local sweet shop market rates
-const sweets = [
-  // ── LADDU & BALLS ────────────────────────────────────────────────────────
-  {name:"Laddu",        alt:"Boondi Unda · ലഡ്ഡു",            cat:"laddu", price:"Enquire", tag:"Classic", img:I.laddu},
-  {name:"Dates Laddu",  alt:"Eentha Unda",                     cat:"laddu", price:"Enquire", tag:"Healthy", img:I.datesladdu},
-  {name:"Nuts Roll",    alt:"Dry Fruit Roll",                  cat:"laddu", price:"Enquire", tag:"Premium", img:I.nutsroll},
-  {name:"Kaju Katli",   alt:"Kaju Barfi",                      cat:"laddu", price:"Enquire", tag:"",        img:I.kajukatli},
-  // ── PAK & FUDGE ─────────────────────────────────────────────────────────
-  {name:"Mysore Pak",   alt:"Mysore Barfi",                    cat:"pak",   price:"Enquire", tag:"",        img:I.mysorepak},
-  {name:"Ghee Pak",     alt:"Nei Pak",                         cat:"pak",   price:"Enquire", tag:"Rich",    img:I.gheepak},
-  {name:"Carrot Pak",   alt:"Carrot Barfi",                    cat:"pak",   price:"Enquire", tag:"",        img:I.carrotpak},
-  {name:"Milk Ghee Pak",alt:"Pal Pak",                         cat:"pak",   price:"Enquire", tag:"",        img:I.milkgheepak},
-  {name:"Halwa",        alt:"Gothambu Halwa · Rava Halwa",    cat:"pak",   price:"Enquire", tag:"",        img:I.halwa},
-  // ── MILK SWEETS ─────────────────────────────────────────────────────────
-  {name:"Gulab Jamun",  alt:"Jamun",             cat:"milk",  price:"Enquire", tag:"Soft",    img:I.gulabjamun},
-  {name:"Rasgulla",     alt:"Rasgolla",                        cat:"milk",  price:"Enquire", tag:"",        img:I.rasgulla},
-  {name:"Rasmalai",     alt:"Ras Malai",                       cat:"milk",  price:"Enquire", tag:"Premium", img:I.rasmalai},
-  {name:"Milk Khova",   alt:"Pal Gova · Paal Gova",           cat:"milk",  price:"Enquire", tag:"",        img:I.milkkhova},
-  // ── FRIED & CRISPY ──────────────────────────────────────────────────────
-  {name:"Jalebi",       alt:"Jilebi · Jilabi",                cat:"fried", price:"Enquire", tag:"Crispy",  img:I.jalebi},
-  {name:"Baby Jalebi",  alt:"Cheru Jilebi · Mini Jilebi",     cat:"fried", price:"Enquire", tag:"Mini",    img:I.babyjalebi},
-  {name:"Sweet Boondi", alt:"Madhura Boondi",                  cat:"fried", price:"Enquire", tag:"",        img:I.sweetboondi},
-  {name:"Savories",     alt:"Kerala Mixture · Snacks",          cat:"fried", price:"Enquire", tag:"",        img:I.savories},
-];
+// Live arrays — populated from Google Sheet on load. Start empty.
+let liveCakes  = [];
+let liveSweets = [];
 
 // Item registry for safe data access without inline JS injection
 const itemRegistry = {};
 
-// Helper to display clean prices or "Enquire" button/text
+// Helper to display clean prices
 function formatDisplayPrice(priceStr) {
   if (!priceStr || priceStr === 'Enquire' || priceStr === '0' || priceStr === '') {
     return '📞 Enquire';
   }
   // If it's a raw number, prepend ₹
-  if (/^\d+$/.test(priceStr)) {
-    return `₹${priceStr}`;
+  if (/^\d+$/.test(String(priceStr))) {
+    return `₹${Number(priceStr).toLocaleString('en-IN')}+`;
   }
   return priceStr;
 }
@@ -1008,10 +951,8 @@ function render(list, id){
 
 let currentCakeCat = 'all', currentSweetCat = 'all';
 
-// Live copies — updated once the Google Sheet loads.
-// Search & filter always use these so prices from the sheet are preserved.
-let liveCakes  = cakes.slice();
-let liveSweets = sweets.slice();
+
+
 
 function filterCakes(cat, btn){
   document.querySelectorAll('#cakeTabBtns .tab-btn').forEach(b => b.classList.remove('active'));
@@ -1132,12 +1073,12 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 document.getElementById('oDate').min = new Date().toISOString().split('T')[0];
 
 // ════════════════════════════════════════════════
-// GOOGLE SHEETS CMS — Owner edits a Google Sheet;
-// site auto-updates. Falls back to hardcoded data.
+// GOOGLE SHEETS CMS — Single source of truth.
+// Owner edits the Google Sheet; site updates live.
+// No hardcoded fallback — sheet is required.
 // ════════════════════════════════════════════════
 
-// 🔗 GOOGLE SHEETS CMS — Owner edits this sheet; site auto-updates.
-// Published CSV endpoint (no auth required — sheet is public)
+// Published CSV endpoint (no auth required — sheet must be published)
 const SHEET_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ78a8DsaRDqw9ZSNixF1J_aE31tBm0aq8-QvoQgtIgpXbe6KjJi9V14pFH9pL0pGHK2JnzXgMnqjGc/pub?output=csv'
   : '/api/menu';
@@ -1155,6 +1096,21 @@ function showLoadingSkeleton(gridId){
       </div>
     </div>`
   ).join('');
+}
+
+// Show error state if sheet fails to load
+function showSheetError(gridId){
+  const grid = document.getElementById(gridId);
+  if(!grid) return;
+  grid.innerHTML = `
+    <div style="grid-column:1/-1;text-align:center;padding:3rem 1rem;color:var(--gray);">
+      <div style="font-size:2.5rem;margin-bottom:0.75rem;">⚠️</div>
+      <div style="font-weight:600;margin-bottom:0.4rem;color:var(--brown);">Menu unavailable right now</div>
+      <div style="font-size:0.85rem;margin-bottom:1.2rem;">Could not load from Google Sheet. Please try again.</div>
+      <button onclick="loadProductsFromSheet()" style="background:var(--rose);color:#fff;border:none;padding:0.6rem 1.4rem;border-radius:100px;font-size:0.85rem;cursor:pointer;font-family:'DM Sans',sans-serif;">
+        🔄 Retry
+      </button>
+    </div>`;
 }
 
 // Parse a single CSV row, handling quoted commas correctly
@@ -1184,34 +1140,29 @@ function csvToObjects(csv){
   }).filter(r => r.name && r.name.toLowerCase() !== 'name');
 }
 
-// Helper to resolve image source: supports direct URLs, Google Drive share links, and local keys
+// Helper to resolve image source: local key, direct URL, or Google Drive link
 function resolveImage(val) {
   if (!val) return FALLBACK;
   const trimmed = val.trim();
-  
-  // Check if it's a web URL
   if (trimmed.toLowerCase().startsWith('http://') || trimmed.toLowerCase().startsWith('https://')) {
-    // Check if it's a Google Drive share link (e.g. /file/d/FILE_ID/view or ?id=FILE_ID)
     const driveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
     if (driveMatch && driveMatch[1]) {
       return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
     }
-    return trimmed; // Return direct image URL as-is
+    return trimmed;
   }
-  
-  // Fallback to local image key mapping
   const cleanKey = trimmed.toLowerCase().replace(/\s+/g,'');
   return I[cleanKey] || FALLBACK;
 }
 
-// Build a product object from a sheet row, resolving the image key via the I{} map or direct URL
+// Build a product object from a sheet row
 function sheetRowToItem(row){
   return {
     name  : row.name,
     alt   : row.alt   || '',
     cat   : row.category || 'special',
     tag   : row.tag   || '',
-    price : row.price || 'Enquire',
+    price : row.price || '',   // empty = no price set in sheet
     img   : resolveImage(row.image_key)
   };
 }
@@ -1226,31 +1177,25 @@ async function loadProductsFromSheet(){
     const csv  = await resp.text();
     const rows = csvToObjects(csv);
 
-    // Split by type column: 'cake' → cakesGrid, anything else → sweetsGrid
-    const sheetCakes  = rows
+    if(rows.length === 0) throw new Error('Sheet returned 0 rows');
+
+    // Split by type column: 'cake' → cakesGrid, 'sweet' → sweetsGrid
+    liveCakes  = rows
       .filter(r => (r.type||'').toLowerCase() === 'cake' && (r.available||'yes').toLowerCase() !== 'no')
       .map(sheetRowToItem);
-    const sheetSweets = rows
-      .filter(r => (r.type||'').toLowerCase() !== 'cake' && (r.available||'yes').toLowerCase() !== 'no')
+    liveSweets = rows
+      .filter(r => (r.type||'').toLowerCase() === 'sweet' && (r.available||'yes').toLowerCase() !== 'no')
       .map(sheetRowToItem);
 
-    // Update live arrays so search & filter also use sheet prices
-    liveCakes  = sheetCakes.length  ? sheetCakes  : cakes;
-    liveSweets = sheetSweets.length ? sheetSweets : sweets;
-
     render(liveCakes,  'cakesGrid');
     render(liveSweets, 'sweetsGrid');
-
-    // Build featured strips after live data is ready
     renderFeaturedStrips(liveCakes, liveSweets);
 
-    console.info(`✅ Loaded ${sheetCakes.length} cakes + ${sheetSweets.length} sweets from Google Sheet.`);
+    console.info(`✅ Sheet loaded: ${liveCakes.length} cakes + ${liveSweets.length} sweets.`);
   } catch(err){
-    console.warn('⚠️  Could not load Google Sheet — using built-in product list.', err);
-    // liveCakes/liveSweets already default to the hardcoded arrays
-    render(liveCakes,  'cakesGrid');
-    render(liveSweets, 'sweetsGrid');
-    renderFeaturedStrips(liveCakes, liveSweets);
+    console.error('❌ Google Sheet load failed:', err);
+    showSheetError('cakesGrid');
+    showSheetError('sweetsGrid');
   }
 }
 
